@@ -1,0 +1,35 @@
+{
+  "name": "aniworld-app",
+  "version": "1.0.0",
+  "description": "AniWorld Watchlist Desktop App",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron .",
+    "make-exe": "electron-packager . AniWorldWatchlist --platform=win32 --arch=x64 --out=dist --overwrite --prune=false --icon=icon.ico",
+    "dist": "electron-builder --win portable"
+  },
+  "dependencies": {
+    "express": "^4.18.2",
+    "playwright": "1.62.1"
+  },
+  "devDependencies": {
+    "@electron/packager": "^20.1.1",
+    "electron": "^43.3.0",
+    "electron-builder": "^24.9.0"
+  },
+  "build": {
+    "appId": "com.aniworld.watchlist",
+    "productName": "AniWorld Watchlist",
+    "asar": true,
+    "asarUnpack": [
+      "**/node_modules/playwright/**/*",
+      "**/node_modules/playwright-core/**/*"
+    ],
+    "files": [
+      "**/*"
+    ],
+    "win": {
+      "target": "portable"
+    }
+  }
+}
