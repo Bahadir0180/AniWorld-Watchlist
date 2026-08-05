@@ -1,0 +1,600 @@
+<!DOCTYPE html>
+<html lang="de">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AniWorld Dashboard</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
+            background: radial-gradient(circle at top left, #2c3240, #11141a);
+            color: #f3f4f6;
+        }
+
+        .apple-depth-card {
+            background: linear-gradient(145deg, rgba(255, 255, 255, 0.12), rgba(255, 255, 255, 0.03));
+            backdrop-filter: blur(25px);
+            -webkit-backdrop-filter: blur(25px);
+            border: 1px solid rgba(255, 255, 255, 0.18);
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.25);
+        }
+
+        .apple-depth-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 30px 50px rgba(0, 0, 0, 0.5), inset 0 1px 0 rgba(255, 255, 255, 0.35);
+        }
+
+        .apple-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid rgba(255, 255, 255, 0.15);
+            box-shadow: inset 0 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+        .apple-button {
+            background: linear-gradient(180deg, #0A84FF 0%, #0066CC 100%);
+            box-shadow: 0 4px 15px rgba(10, 132, 255, 0.4), inset 0 1px 0 rgba(255, 255, 255, 0.3);
+        }
+
+        .apple-button:active {
+            transform: scale(0.97);
+        }
+
+        .nav-pill {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            transition: all 0.2s ease;
+        }
+
+        .nav-pill.active {
+            background: rgba(255, 255, 255, 0.2);
+            border-color: rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            color: #fff;
+        }
+
+        .star-icon {
+            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
+            transition: transform 0.2s;
+        }
+
+        .star-icon:hover {
+            transform: scale(1.2);
+        }
+    </style>
+</head>
+
+<body class="min-h-screen p-4 md:p-10">
+    <div class="max-w-6xl mx-auto">
+
+        <!-- Header -->
+        <header class="flex flex-col md:flex-row justify-between items-center mb-8 gap-4">
+            <div>
+                <h1 class="text-3xl md:text-4xl font-bold tracking-tight text-white drop-shadow-md">AniWorld Dashboard
+                </h1>
+                <p id="sub-header-text" class="text-gray-400 text-sm mt-1">Lade deine Watchlist offline oder
+                    aktualisiere sie live</p>
+            </div>
+
+            <div id="header-actions" class="hidden flex items-center gap-3">
+                <!-- EINSTELLUNGEN BUTTON -->
+                <button onclick="openSettings()"
+                    class="apple-depth-card text-xs font-semibold px-4 py-2.5 rounded-xl text-gray-300 hover:text-white transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Custom Genres
+                </button>
+
+                <button onclick="syncWithAniWorld()" id="sync-btn"
+                    class="apple-button text-xs font-semibold px-4 py-2.5 rounded-xl text-white transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15">
+                        </path>
+                    </svg>
+                    Aktualisieren
+                </button>
+
+                <button onclick="logout()"
+                    class="apple-depth-card text-xs font-semibold px-4 py-2.5 rounded-xl text-gray-300 hover:text-white transition">
+                    Abmelden
+                </button>
+            </div>
+        </header>
+
+        <!-- LOGIN SCREEN -->
+        <div id="login-screen" class="apple-depth-card p-8 rounded-3xl max-w-md mx-auto my-12">
+            <h2 class="text-xl font-semibold mb-6 text-center">Einloggen</h2>
+            <div class="space-y-4">
+                <div>
+                    <input type="email" id="email" placeholder="E-Mail Adresse"
+                        class="apple-input w-full p-3.5 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div>
+                    <input type="password" id="password" placeholder="Passwort"
+                        class="apple-input w-full p-3.5 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition">
+                </div>
+                <div class="flex items-center gap-2 pt-1">
+                    <input type="checkbox" id="remember-me"
+                        class="w-4 h-4 rounded bg-gray-800 border-gray-600 text-blue-500 focus:ring-0 cursor-pointer"
+                        checked>
+                    <label for="remember-me" class="text-sm text-gray-300 cursor-pointer">Angemeldet bleiben</label>
+                </div>
+                <button onclick="initialLogin()"
+                    class="apple-button w-full font-semibold py-3.5 rounded-xl text-white transition mt-2">
+                    Erstmalig Laden & Speichern
+                </button>
+            </div>
+        </div>
+
+        <!-- DASHBOARD SCREEN -->
+        <div id="dashboard-screen" class="hidden space-y-6">
+
+            <!-- Suchleiste & Filter Navigation -->
+            <div
+                class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 apple-depth-card p-4 rounded-2xl">
+
+                <!-- SUCHFELD -->
+                <div class="relative flex-grow max-w-md">
+                    <svg class="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" fill="none" stroke="currentColor"
+                        viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+                    </svg>
+                    <input type="text" id="search-input" oninput="handleSearch(this.value)"
+                        placeholder="Titel durchsuchen..."
+                        class="apple-input w-full pl-10 pr-4 py-2 text-xs rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition">
+                </div>
+
+                <!-- TABS (Alle, Serien, Filme, Favoriten) -->
+                <div class="flex flex-wrap items-center gap-2">
+                    <button onclick="switchTab('all')" id="tab-all"
+                        class="nav-pill active text-xs font-medium px-3.5 py-2 rounded-xl">
+                        Alle (<span id="count-all">0</span>)
+                    </button>
+                    <button onclick="switchTab('series')" id="tab-series"
+                        class="nav-pill text-xs font-medium px-3.5 py-2 rounded-xl">
+                        Serien (<span id="count-series">0</span>)
+                    </button>
+                    <button onclick="switchTab('movies')" id="tab-movies"
+                        class="nav-pill text-xs font-medium px-3.5 py-2 rounded-xl text-purple-300">
+                        🎬 Filme (<span id="count-movies">0</span>)
+                    </button>
+                    <button onclick="switchTab('favorites')" id="tab-favorites"
+                        class="nav-pill text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1">
+                        <span class="text-yellow-400">★</span> Favs (<span id="count-favs">0</span>)
+                    </button>
+                </div>
+
+                <!-- Genre Filter -->
+                <div class="flex items-center gap-2">
+                    <select id="genre-select" onchange="filterGenre(this.value)"
+                        class="apple-input text-xs rounded-xl px-3 py-2 text-white outline-none cursor-pointer w-full md:w-auto">
+                        <option value="all">Alle Genres / Tags</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Sync Status -->
+            <div id="dash-status"
+                class="apple-depth-card text-center py-4 px-6 rounded-2xl text-sm font-medium text-blue-400 hidden">
+            </div>
+
+            <!-- Anime Grid -->
+            <div id="watchlist-results" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
+        </div>
+
+    </div>
+
+    <!-- EINSTELLUNGEN MODAL (Custom Genres) -->
+    <div id="settings-modal"
+        class="fixed inset-0 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="apple-depth-card w-full max-w-lg p-6 rounded-3xl space-y-5">
+            <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 class="text-lg font-bold text-white">Custom Genres verwalten</h3>
+                <button onclick="closeSettings()" class="text-gray-400 hover:text-white text-lg">✕</button>
+            </div>
+
+            <div class="space-y-3">
+                <label class="text-xs font-medium text-gray-300">1. Genre-Name erstellen</label>
+                <input type="text" id="new-custom-genre" placeholder="z. B. Must Watch, Studio Ghibli..."
+                    class="apple-input w-full p-2.5 text-xs rounded-xl text-white outline-none">
+
+                <label class="text-xs font-medium text-gray-300 block pt-2">2. Anime auswählen</label>
+                <select id="custom-anime-select"
+                    class="apple-input w-full p-2.5 text-xs rounded-xl text-white outline-none">
+                    <!-- Wird dynamisch befüllt -->
+                </select>
+
+                <button onclick="addCustomGenre()"
+                    class="apple-button w-full font-semibold py-2.5 rounded-xl text-xs text-white mt-2">
+                    Tag zuweisen
+                </button>
+            </div>
+
+            <div class="pt-3 border-t border-white/10">
+                <h4 class="text-xs font-semibold text-gray-400 mb-2">Erstellte Custom-Tags:</h4>
+                <div id="custom-tags-list" class="space-y-2 max-h-40 overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let fullWatchlist = [];
+        let favorites = JSON.parse(localStorage.getItem('ani_favs') || '[]');
+        let customGenres = JSON.parse(localStorage.getItem('ani_custom_genres') || '{}'); // Format: { "Tag-Name": ["Anime Title 1", "Anime Title 2"] }
+
+        let currentTab = 'all';
+        let currentGenre = 'all';
+        let searchQuery = '';
+
+        window.addEventListener('DOMContentLoaded', () => {
+            const savedWatchlist = localStorage.getItem('ani_cached_watchlist');
+            const savedEmail = localStorage.getItem('ani_email');
+            const savedPass = localStorage.getItem('ani_pass');
+
+            if (savedEmail && savedPass) {
+                document.getElementById('email').value = savedEmail;
+                document.getElementById('password').value = savedPass;
+            }
+
+            if (savedWatchlist) {
+                fullWatchlist = JSON.parse(savedWatchlist);
+                showDashboard();
+                populateGenres();
+                renderDashboard();
+
+                const lastSync = localStorage.getItem('ani_last_sync') || 'Unbekannt';
+                document.getElementById('sub-header-text').innerText = `Offline gespeichert (Zuletzt aktualisiert: ${lastSync})`;
+            }
+        });
+
+        function showDashboard() {
+            document.getElementById('login-screen').classList.add('hidden');
+            document.getElementById('dashboard-screen').classList.remove('hidden');
+            document.getElementById('header-actions').classList.remove('hidden');
+        }
+
+        function initialLogin() {
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const rememberMe = document.getElementById('remember-me').checked;
+
+            if (!email || !password) {
+                alert('Bitte E-Mail und Passwort eingeben.');
+                return;
+            }
+
+            if (rememberMe) {
+                localStorage.setItem('ani_email', email);
+                localStorage.setItem('ani_pass', password);
+            }
+
+            syncWithAniWorld();
+        }
+
+        async function syncWithAniWorld() {
+            const email = document.getElementById('email').value || localStorage.getItem('ani_email');
+            const password = document.getElementById('password').value || localStorage.getItem('ani_pass');
+            const dashStatus = document.getElementById('dash-status');
+            const syncBtn = document.getElementById('sync-btn');
+
+            if (!email || !password) {
+                alert('Keine Anmeldedaten gefunden.');
+                return;
+            }
+
+            showDashboard();
+            dashStatus.classList.remove('hidden');
+            dashStatus.innerText = 'Aktualisiere Live-Daten von AniWorld... Bitte warten.';
+            syncBtn.disabled = true;
+            syncBtn.style.opacity = '0.5';
+
+            try {
+                const res = await fetch('/api/fetch-watchlist', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password })
+                });
+
+                const data = await res.json();
+
+                if (data.error) {
+                    dashStatus.innerText = 'Fehler beim Aktualisieren: ' + data.error;
+                    syncBtn.disabled = false;
+                    syncBtn.style.opacity = '1';
+                    return;
+                }
+
+                fullWatchlist = data.watchlist;
+
+                const nowText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+                localStorage.setItem('ani_cached_watchlist', JSON.stringify(fullWatchlist));
+                localStorage.setItem('ani_last_sync', nowText);
+
+                document.getElementById('sub-header-text').innerText = `Zuletzt aktualisiert um ${nowText}`;
+                dashStatus.classList.add('hidden');
+
+                populateGenres();
+                renderDashboard();
+
+            } catch (err) {
+                dashStatus.innerText = 'Netzwerkfehler zum Server.';
+                console.error(err);
+            } finally {
+                syncBtn.disabled = false;
+                syncBtn.style.opacity = '1';
+            }
+        }
+
+        function logout() {
+            localStorage.clear();
+            location.reload();
+        }
+
+        function toggleFav(title) {
+            if (favorites.includes(title)) {
+                favorites = favorites.filter(t => t !== title);
+            } else {
+                favorites.push(title);
+            }
+            localStorage.setItem('ani_favs', JSON.stringify(favorites));
+            renderDashboard();
+        }
+
+        function handleSearch(query) {
+            searchQuery = query.toLowerCase().trim();
+            renderDashboard();
+        }
+
+        function populateGenres() {
+            const genreSet = new Set();
+
+            // Offizielle Genres auslesen
+            fullWatchlist.forEach(a => {
+                if (a.genres) a.genres.forEach(g => genreSet.add(g));
+            });
+
+            const select = document.getElementById('genre-select');
+            select.innerHTML = '<option value="all">Alle Genres / Tags</option>';
+
+            // Offizielle Genres einfügen
+            Array.from(genreSet).sort().forEach(g => {
+                const label = (g.toLowerCase() === 'ger' || g.toLowerCase() === 'german') ? '🇩🇪 German Dub (Ger)' : g;
+                select.innerHTML += `<option value="${g}">${label}</option>`;
+            });
+
+            // Custom Genres einfügen
+            Object.keys(customGenres).forEach(cGenre => {
+                select.innerHTML += `<option value="custom:${cGenre}">🏷️ ${cGenre} (Custom)</option>`;
+            });
+        }
+
+        function switchTab(tab) {
+            currentTab = tab;
+            document.getElementById('tab-all').classList.toggle('active', tab === 'all');
+            document.getElementById('tab-series').classList.toggle('active', tab === 'series');
+            document.getElementById('tab-movies').classList.toggle('active', tab === 'movies');
+            document.getElementById('tab-favorites').classList.toggle('active', tab === 'favorites');
+            renderDashboard();
+        }
+
+        function filterGenre(genre) {
+            currentGenre = genre;
+            renderDashboard();
+        }
+
+        function renderDashboard() {
+            const results = document.getElementById('watchlist-results');
+            results.innerHTML = '';
+
+            // Zähler berechnen
+            const moviesCount = fullWatchlist.filter(a => a.isMovie).length;
+            const seriesCount = fullWatchlist.length - moviesCount;
+
+            document.getElementById('count-all').innerText = fullWatchlist.length;
+            document.getElementById('count-series').innerText = seriesCount;
+            document.getElementById('count-movies').innerText = moviesCount;
+            document.getElementById('count-favs').innerText = favorites.length;
+
+            let filtered = fullWatchlist.filter(anime => {
+                // Tab-Filter
+                let matchesTab = true;
+                if (currentTab === 'series') matchesTab = !anime.isMovie;
+                if (currentTab === 'movies') matchesTab = anime.isMovie;
+                if (currentTab === 'favorites') matchesTab = favorites.includes(anime.title);
+
+                // Suchfeld-Filter
+                let matchesSearch = true;
+                if (searchQuery) {
+                    matchesSearch = anime.title.toLowerCase().includes(searchQuery);
+                }
+
+                // Genre-Filter (inkl. Custom Genres)
+                let matchesGenre = true;
+                if (currentGenre !== 'all') {
+                    if (currentGenre.startsWith('custom:')) {
+                        const tagName = currentGenre.replace('custom:', '');
+                        matchesGenre = customGenres[tagName] && customGenres[tagName].includes(anime.title);
+                    } else {
+                        matchesGenre = anime.genres && anime.genres.includes(currentGenre);
+                    }
+                }
+
+                return matchesTab && matchesSearch && matchesGenre;
+            });
+
+            if (filtered.length === 0) {
+                results.innerHTML = `<div class="col-span-full text-center py-12 text-gray-500 text-sm">Keine Animes für diese Such-/Filterkombination gefunden.</div>`;
+                return;
+            }
+
+            filtered.forEach(anime => {
+                const isFav = favorites.includes(anime.title);
+                const card = document.createElement('div');
+                card.className = 'apple-depth-card p-5 rounded-3xl flex gap-5 items-start transition-all relative group';
+
+                let seasonsHTML = '';
+                if (anime.seasons && anime.seasons.length > 0) {
+                    seasonsHTML = `<div class="mt-3 pt-3 border-t border-white/10 flex flex-wrap gap-1.5">`;
+                    anime.seasons.forEach(s => {
+                        let badgeStyle = 'bg-gray-800/80 text-gray-400 border-gray-700/50';
+                        let icon = '○';
+
+                        if (s.status === 'completed') {
+                            badgeStyle = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-sm shadow-emerald-950';
+                            icon = '✓';
+                        } else if (s.status === 'in_progress') {
+                            badgeStyle = 'bg-amber-500/20 text-amber-300 border-amber-500/30 shadow-sm shadow-amber-950';
+                            icon = '◐';
+                        }
+
+                        seasonsHTML += `
+                            <span class="text-[11px] px-2.5 py-1 rounded-lg border font-medium flex items-center gap-1 ${badgeStyle}">
+                                <span>${icon}</span> ${s.name} (${s.watched}/${s.total})
+                            </span>
+                        `;
+                    });
+                    seasonsHTML += `</div>`;
+                }
+
+                // Generiere Custom Badges für diesen Anime
+                let animeCustomBadges = '';
+                Object.keys(customGenres).forEach(tag => {
+                    if (customGenres[tag].includes(anime.title)) {
+                        animeCustomBadges += `<span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-medium">🏷️ ${tag}</span> `;
+                    }
+                });
+
+                // Standard Genre Badges
+                let genreBadges = anime.genres ? anime.genres.map(g => {
+                    if (g.toLowerCase() === 'ger' || g.toLowerCase() === 'german') {
+                        return `<span class="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded-md font-semibold">🇩🇪 Ger</span>`;
+                    }
+                    return `<span class="text-[10px] bg-white/5 border border-white/10 px-2 py-0.5 rounded-md text-gray-400">${g}</span>`;
+                }).join(' ') : '';
+
+                card.innerHTML = `
+                    <button onclick="toggleFav('${anime.title.replace(/'/g, "\\'")}')" class="absolute top-4 right-4 star-icon text-xl cursor-pointer focus:outline-none" title="Favorit umschalten">
+                        <span class="${isFav ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-400'}">${isFav ? '★' : '☆'}</span>
+                    </button>
+
+                    ${anime.cover ? `<img src="${anime.cover}" class="w-20 h-28 object-cover rounded-2xl shadow-2xl flex-shrink-0">` : ''}
+                    
+                    <div class="flex-grow min-w-0 pr-6">
+                        <div class="flex items-center gap-2">
+                            <h3 class="font-semibold text-base leading-snug truncate text-white">${anime.title}</h3>
+                            ${anime.isMovie ? '<span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded">Film</span>' : ''}
+                        </div>
+                        <p class="text-xs text-blue-400 font-medium mt-0.5">${anime.progressText}</p>
+                        
+                        <div class="flex flex-wrap gap-1 mt-2">
+                            ${animeCustomBadges}
+                            ${genreBadges}
+                        </div>
+
+                        ${seasonsHTML}
+
+                        <div class="mt-3">
+                            <a href="${anime.link}" target="_blank" class="inline-flex items-center text-xs font-semibold text-[#0A84FF] hover:text-[#409CFF] transition">
+                                Auf AniWorld öffnen 
+                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
+                            </a>
+                        </div>
+                    </div>
+                `;
+                results.appendChild(card);
+            });
+        }
+
+        /* --- CUSTOM GENRE MODAL LOGIK --- */
+        function openSettings() {
+            const select = document.getElementById('custom-anime-select');
+            select.innerHTML = '';
+
+            fullWatchlist.forEach(anime => {
+                select.innerHTML += `<option value="${anime.title}">${anime.title}</option>`;
+            });
+
+            renderCustomTagsList();
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        function addCustomGenre() {
+            const tagInput = document.getElementById('new-custom-genre');
+            const animeSelect = document.getElementById('custom-anime-select');
+
+            const tagName = tagInput.value.trim();
+            const animeTitle = animeSelect.value;
+
+            if (!tagName) {
+                alert('Bitte gib einen Tag-Namen ein.');
+                return;
+            }
+
+            if (!customGenres[tagName]) {
+                customGenres[tagName] = [];
+            }
+
+            if (!customGenres[tagName].includes(animeTitle)) {
+                customGenres[tagName].push(animeTitle);
+            }
+
+            localStorage.setItem('ani_custom_genres', JSON.stringify(customGenres));
+            tagInput.value = '';
+
+            renderCustomTagsList();
+            populateGenres();
+            renderDashboard();
+        }
+
+        function removeCustomTag(tagName, animeTitle) {
+            if (customGenres[tagName]) {
+                customGenres[tagName] = customGenres[tagName].filter(t => t !== animeTitle);
+                if (customGenres[tagName].length === 0) {
+                    delete customGenres[tagName];
+                }
+            }
+            localStorage.setItem('ani_custom_genres', JSON.stringify(customGenres));
+            renderCustomTagsList();
+            populateGenres();
+            renderDashboard();
+        }
+
+        function renderCustomTagsList() {
+            const container = document.getElementById('custom-tags-list');
+            container.innerHTML = '';
+
+            const keys = Object.keys(customGenres);
+            if (keys.length === 0) {
+                container.innerHTML = `<span class="text-xs text-gray-500">Noch keine Custom-Tags vorhanden.</span>`;
+                return;
+            }
+
+            keys.forEach(tag => {
+                customGenres[tag].forEach(animeTitle => {
+                    container.innerHTML += `
+                        <div class="flex items-center justify-between text-xs bg-white/5 border border-white/10 p-2 rounded-xl">
+                            <div>
+                                <span class="font-semibold text-purple-300">🏷️ ${tag}</span>: <span class="text-gray-300">${animeTitle}</span>
+                            </div>
+                            <button onclick="removeCustomTag('${tag}', '${animeTitle.replace(/'/g, "\\'")}')" class="text-red-400 hover:text-red-300 ml-2">Löschen</button>
+                        </div>
+                    `;
+                });
+            });
+        }
+    </script>
+</body>
+
+</html>
