@@ -6,6 +6,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>AniWorld Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <!-- XLSX Parser für Excel-Import -->
+    <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
     <style>
         body {
             font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "SF Pro Text", system-ui, sans-serif;
@@ -54,12 +56,12 @@
             color: #fff;
         }
 
-        .star-icon {
-            filter: drop-shadow(0 2px 4px rgba(0, 0, 0, 0.5));
-            transition: transform 0.2s;
+        .star-rating span {
+            cursor: pointer;
+            transition: transform 0.1s, color 0.1s;
         }
 
-        .star-icon:hover {
+        .star-rating span:hover {
             transform: scale(1.2);
         }
     </style>
@@ -78,17 +80,9 @@
             </div>
 
             <div id="header-actions" class="hidden flex items-center gap-3">
-                <!-- EINSTELLUNGEN BUTTON -->
-                <button onclick="openSettings()"
+                <button onclick="openCustomGenresModal()"
                     class="apple-depth-card text-xs font-semibold px-4 py-2.5 rounded-xl text-gray-300 hover:text-white transition flex items-center gap-2">
-                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
-                        </path>
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                    </svg>
-                    Custom Genres
+                    🏷️ Custom Genres
                 </button>
 
                 <button onclick="syncWithAniWorld()" id="sync-btn"
@@ -99,6 +93,18 @@
                         </path>
                     </svg>
                     Aktualisieren
+                </button>
+
+                <button onclick="openSettingsModal()"
+                    class="apple-depth-card text-xs font-semibold px-4 py-2.5 rounded-xl text-gray-300 hover:text-white transition flex items-center gap-2">
+                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z">
+                        </path>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                            d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                    </svg>
+                    Einstellungen
                 </button>
 
                 <button onclick="logout()"
@@ -135,12 +141,8 @@
 
         <!-- DASHBOARD SCREEN -->
         <div id="dashboard-screen" class="hidden space-y-6">
-
-            <!-- Suchleiste & Filter Navigation -->
             <div
                 class="flex flex-col md:flex-row items-stretch md:items-center justify-between gap-4 apple-depth-card p-4 rounded-2xl">
-
-                <!-- SUCHFELD -->
                 <div class="relative flex-grow max-w-md">
                     <svg class="w-4 h-4 absolute left-3.5 top-3.5 text-gray-400" fill="none" stroke="currentColor"
                         viewBox="0 0 24 24">
@@ -152,27 +154,21 @@
                         class="apple-input w-full pl-10 pr-4 py-2 text-xs rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500 transition">
                 </div>
 
-                <!-- TABS (Alle, Serien, Filme, Favoriten) -->
                 <div class="flex flex-wrap items-center gap-2">
                     <button onclick="switchTab('all')" id="tab-all"
-                        class="nav-pill active text-xs font-medium px-3.5 py-2 rounded-xl">
-                        Alle (<span id="count-all">0</span>)
-                    </button>
+                        class="nav-pill active text-xs font-medium px-3.5 py-2 rounded-xl">Alle (<span
+                            id="count-all">0</span>)</button>
                     <button onclick="switchTab('series')" id="tab-series"
-                        class="nav-pill text-xs font-medium px-3.5 py-2 rounded-xl">
-                        Serien (<span id="count-series">0</span>)
-                    </button>
+                        class="nav-pill text-xs font-medium px-3.5 py-2 rounded-xl">Serien (<span
+                            id="count-series">0</span>)</button>
                     <button onclick="switchTab('movies')" id="tab-movies"
-                        class="nav-pill text-xs font-medium px-3.5 py-2 rounded-xl text-purple-300">
-                        🎬 Filme (<span id="count-movies">0</span>)
-                    </button>
+                        class="nav-pill text-xs font-medium px-3.5 py-2 rounded-xl text-purple-300">🎬 Filme (<span
+                            id="count-movies">0</span>)</button>
                     <button onclick="switchTab('favorites')" id="tab-favorites"
-                        class="nav-pill text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1">
-                        <span class="text-yellow-400">★</span> Favs (<span id="count-favs">0</span>)
-                    </button>
+                        class="nav-pill text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1"><span
+                            class="text-yellow-400">★</span> Favs (<span id="count-favs">0</span>)</button>
                 </div>
 
-                <!-- Genre Filter -->
                 <div class="flex items-center gap-2">
                     <select id="genre-select" onchange="filterGenre(this.value)"
                         class="apple-input text-xs rounded-xl px-3 py-2 text-white outline-none cursor-pointer w-full md:w-auto">
@@ -181,41 +177,119 @@
                 </div>
             </div>
 
-            <!-- Sync Status -->
             <div id="dash-status"
                 class="apple-depth-card text-center py-4 px-6 rounded-2xl text-sm font-medium text-blue-400 hidden">
             </div>
-
-            <!-- Anime Grid -->
             <div id="watchlist-results" class="grid grid-cols-1 md:grid-cols-2 gap-6"></div>
         </div>
 
     </div>
 
-    <!-- EINSTELLUNGEN MODAL (Custom Genres) -->
+    <!-- DETAILS MODAL -->
+    <div id="details-modal"
+        class="fixed inset-0 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="apple-depth-card w-full max-w-lg p-6 rounded-3xl space-y-5 relative">
+            <button onclick="closeDetailsModal()"
+                class="absolute top-5 right-5 text-gray-400 hover:text-white text-lg font-bold">✕</button>
+            <div id="modal-content"></div>
+        </div>
+    </div>
+
+    <!-- EINSTELLUNGEN MODAL -->
     <div id="settings-modal"
+        class="fixed inset-0 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="apple-depth-card w-full max-w-lg p-6 rounded-3xl space-y-5 relative max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 class="text-lg font-bold text-white">Einstellungen & Werkzeuge</h3>
+                <button onclick="closeSettingsModal()"
+                    class="text-gray-400 hover:text-white text-lg font-bold">✕</button>
+            </div>
+
+            <div class="space-y-4 text-xs">
+                <!-- Cover Art Fetcher -->
+                <div class="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                    <h4 class="font-bold text-white text-sm">🖼️ Cover-Bilder nachladen</h4>
+                    <p class="text-gray-400">Sucht online (via Jikan API) nach fehlenden Covers für deine Animes.</p>
+                    <button onclick="fetchAllMissingCovers()" id="btn-fetch-covers"
+                        class="apple-button px-4 py-2 rounded-xl font-semibold text-white">Fehlende Cover
+                        herunterladen</button>
+                    <div id="cover-fetch-status" class="text-blue-400 font-medium pt-1 hidden"></div>
+                </div>
+
+                <!-- Duplikate verwalten -->
+                <div class="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                    <h4 class="font-bold text-white text-sm">🔍 Doppelte Animes zusammenführen</h4>
+                    <p class="text-gray-400">Prüft deine Watchlist auf Animes mit ähnlichem Namen und lässt dich
+                        entscheiden, ob sie doppelt sind.</p>
+                    <button onclick="startDuplicateCheck()"
+                        class="bg-purple-500/20 hover:bg-purple-500/30 border border-purple-500/40 text-purple-300 px-4 py-2 rounded-xl font-semibold transition">Duplikate
+                        suchen</button>
+                </div>
+
+                <!-- Export / Backup -->
+                <div class="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                    <h4 class="font-bold text-white text-sm">💾 Backup erstellen</h4>
+                    <p class="text-gray-400">Sichere deine Watchlist inkl. Ratings und Custom Genres als Datei.</p>
+                    <button onclick="exportBackup()"
+                        class="apple-button px-4 py-2 rounded-xl font-semibold text-white">Backup herunterladen
+                        (.json)</button>
+                </div>
+
+                <!-- JSON Import -->
+                <div class="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                    <h4 class="font-bold text-white text-sm">📥 JSON Backup wiederherstellen</h4>
+                    <input type="file" id="json-import-input" accept=".json" class="hidden"
+                        onchange="importJSON(event)">
+                    <button onclick="document.getElementById('json-import-input').click()"
+                        class="bg-white/10 hover:bg-white/20 border border-white/20 text-white px-4 py-2 rounded-xl font-semibold transition">JSON
+                        Datei auswählen</button>
+                </div>
+
+                <!-- Excel Import -->
+                <div class="p-4 bg-white/5 rounded-2xl border border-white/10 space-y-2">
+                    <h4 class="font-bold text-white text-sm">📊 Excel-Tabelle (.xlsx, .xls, .csv) importieren</h4>
+                    <p class="text-gray-400">Importiert Animes aus Excel und lädt fehlende Cover automatisch herunter.
+                    </p>
+                    <input type="file" id="excel-import-input" accept=".xlsx, .xls, .csv" class="hidden"
+                        onchange="importExcel(event)">
+                    <button onclick="document.getElementById('excel-import-input').click()"
+                        class="bg-emerald-500/20 hover:bg-emerald-500/30 border border-emerald-500/40 text-emerald-300 px-4 py-2 rounded-xl font-semibold transition">Excel
+                        Datei importieren</button>
+                    <div id="excel-status" class="text-blue-400 font-medium pt-1 hidden"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- DUPLIKATE PROMPTER MODAL -->
+    <div id="duplicates-modal"
+        class="fixed inset-0 bg-black/80 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
+        <div class="apple-depth-card w-full max-w-lg p-6 rounded-3xl space-y-5 relative">
+            <div class="flex justify-between items-center border-b border-white/10 pb-3">
+                <h3 class="text-lg font-bold text-white">Mögliche Duplikate gefunden</h3>
+                <button onclick="closeDuplicatesModal()"
+                    class="text-gray-400 hover:text-white text-lg font-bold">✕</button>
+            </div>
+            <div id="duplicate-candidate-container" class="space-y-4"></div>
+        </div>
+    </div>
+
+    <!-- CUSTOM GENRES MODAL -->
+    <div id="custom-genres-modal"
         class="fixed inset-0 bg-black/70 backdrop-blur-md hidden flex items-center justify-center p-4 z-50">
         <div class="apple-depth-card w-full max-w-lg p-6 rounded-3xl space-y-5">
             <div class="flex justify-between items-center border-b border-white/10 pb-3">
                 <h3 class="text-lg font-bold text-white">Custom Genres verwalten</h3>
-                <button onclick="closeSettings()" class="text-gray-400 hover:text-white text-lg">✕</button>
+                <button onclick="closeCustomGenresModal()" class="text-gray-400 hover:text-white text-lg">✕</button>
             </div>
 
             <div class="space-y-3">
-                <label class="text-xs font-medium text-gray-300">1. Genre-Name erstellen</label>
                 <input type="text" id="new-custom-genre" placeholder="z. B. Must Watch, Studio Ghibli..."
                     class="apple-input w-full p-2.5 text-xs rounded-xl text-white outline-none">
-
-                <label class="text-xs font-medium text-gray-300 block pt-2">2. Anime auswählen</label>
                 <select id="custom-anime-select"
-                    class="apple-input w-full p-2.5 text-xs rounded-xl text-white outline-none">
-                    <!-- Wird dynamisch befüllt -->
-                </select>
-
+                    class="apple-input w-full p-2.5 text-xs rounded-xl text-white outline-none"></select>
                 <button onclick="addCustomGenre()"
-                    class="apple-button w-full font-semibold py-2.5 rounded-xl text-xs text-white mt-2">
-                    Tag zuweisen
-                </button>
+                    class="apple-button w-full font-semibold py-2.5 rounded-xl text-xs text-white">Tag zuweisen</button>
             </div>
 
             <div class="pt-3 border-t border-white/10">
@@ -228,11 +302,14 @@
     <script>
         let fullWatchlist = [];
         let favorites = JSON.parse(localStorage.getItem('ani_favs') || '[]');
-        let customGenres = JSON.parse(localStorage.getItem('ani_custom_genres') || '{}'); // Format: { "Tag-Name": ["Anime Title 1", "Anime Title 2"] }
+        let ratings = JSON.parse(localStorage.getItem('ani_ratings') || '{}');
+        let customGenres = JSON.parse(localStorage.getItem('ani_custom_genres') || '{}');
 
         let currentTab = 'all';
         let currentGenre = 'all';
         let searchQuery = '';
+        let duplicatePairs = [];
+        let currentDuplicateIndex = 0;
 
         window.addEventListener('DOMContentLoaded', () => {
             const savedWatchlist = localStorage.getItem('ani_cached_watchlist');
@@ -249,9 +326,6 @@
                 showDashboard();
                 populateGenres();
                 renderDashboard();
-
-                const lastSync = localStorage.getItem('ani_last_sync') || 'Unbekannt';
-                document.getElementById('sub-header-text').innerText = `Offline gespeichert (Zuletzt aktualisiert: ${lastSync})`;
             }
         });
 
@@ -266,16 +340,12 @@
             const password = document.getElementById('password').value;
             const rememberMe = document.getElementById('remember-me').checked;
 
-            if (!email || !password) {
-                alert('Bitte E-Mail und Passwort eingeben.');
-                return;
-            }
+            if (!email || !password) return alert('Bitte E-Mail und Passwort eingeben.');
 
             if (rememberMe) {
                 localStorage.setItem('ani_email', email);
                 localStorage.setItem('ani_pass', password);
             }
-
             syncWithAniWorld();
         }
 
@@ -283,18 +353,12 @@
             const email = document.getElementById('email').value || localStorage.getItem('ani_email');
             const password = document.getElementById('password').value || localStorage.getItem('ani_pass');
             const dashStatus = document.getElementById('dash-status');
-            const syncBtn = document.getElementById('sync-btn');
 
-            if (!email || !password) {
-                alert('Keine Anmeldedaten gefunden.');
-                return;
-            }
+            if (!email || !password) return alert('Keine Anmeldedaten gefunden.');
 
             showDashboard();
             dashStatus.classList.remove('hidden');
             dashStatus.innerText = 'Aktualisiere Live-Daten von AniWorld... Bitte warten.';
-            syncBtn.disabled = true;
-            syncBtn.style.opacity = '0.5';
 
             try {
                 const res = await fetch('/api/fetch-watchlist', {
@@ -304,32 +368,18 @@
                 });
 
                 const data = await res.json();
-
                 if (data.error) {
-                    dashStatus.innerText = 'Fehler beim Aktualisieren: ' + data.error;
-                    syncBtn.disabled = false;
-                    syncBtn.style.opacity = '1';
+                    dashStatus.innerText = 'Fehler: ' + data.error;
                     return;
                 }
 
                 fullWatchlist = data.watchlist;
-
-                const nowText = new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
                 localStorage.setItem('ani_cached_watchlist', JSON.stringify(fullWatchlist));
-                localStorage.setItem('ani_last_sync', nowText);
-
-                document.getElementById('sub-header-text').innerText = `Zuletzt aktualisiert um ${nowText}`;
                 dashStatus.classList.add('hidden');
-
                 populateGenres();
                 renderDashboard();
-
             } catch (err) {
-                dashStatus.innerText = 'Netzwerkfehler zum Server.';
-                console.error(err);
-            } finally {
-                syncBtn.disabled = false;
-                syncBtn.style.opacity = '1';
+                dashStatus.innerText = 'Netzwerkfehler.';
             }
         }
 
@@ -339,13 +389,17 @@
         }
 
         function toggleFav(title) {
-            if (favorites.includes(title)) {
-                favorites = favorites.filter(t => t !== title);
-            } else {
-                favorites.push(title);
-            }
+            favorites = favorites.includes(title) ? favorites.filter(t => t !== title) : [...favorites, title];
             localStorage.setItem('ani_favs', JSON.stringify(favorites));
             renderDashboard();
+        }
+
+        function setRating(title, score) {
+            ratings[title] = score;
+            localStorage.setItem('ani_ratings', JSON.stringify(ratings));
+            renderDashboard();
+            const idx = fullWatchlist.findIndex(a => a.title === title);
+            if (idx !== -1) openDetailsModal(idx);
         }
 
         function handleSearch(query) {
@@ -355,33 +409,23 @@
 
         function populateGenres() {
             const genreSet = new Set();
-
-            // Offizielle Genres auslesen
-            fullWatchlist.forEach(a => {
-                if (a.genres) a.genres.forEach(g => genreSet.add(g));
-            });
-
+            fullWatchlist.forEach(a => a.genres && a.genres.forEach(g => genreSet.add(g)));
             const select = document.getElementById('genre-select');
             select.innerHTML = '<option value="all">Alle Genres / Tags</option>';
 
-            // Offizielle Genres einfügen
             Array.from(genreSet).sort().forEach(g => {
-                const label = (g.toLowerCase() === 'ger' || g.toLowerCase() === 'german') ? '🇩🇪 German Dub (Ger)' : g;
-                select.innerHTML += `<option value="${g}">${label}</option>`;
+                select.innerHTML += `<option value="${g}">${g}</option>`;
             });
-
-            // Custom Genres einfügen
-            Object.keys(customGenres).forEach(cGenre => {
-                select.innerHTML += `<option value="custom:${cGenre}">🏷️ ${cGenre} (Custom)</option>`;
+            Object.keys(customGenres).forEach(c => {
+                select.innerHTML += `<option value="custom:${c}">🏷️ ${c}</option>`;
             });
         }
 
         function switchTab(tab) {
             currentTab = tab;
-            document.getElementById('tab-all').classList.toggle('active', tab === 'all');
-            document.getElementById('tab-series').classList.toggle('active', tab === 'series');
-            document.getElementById('tab-movies').classList.toggle('active', tab === 'movies');
-            document.getElementById('tab-favorites').classList.toggle('active', tab === 'favorites');
+            ['all', 'series', 'movies', 'favorites'].forEach(t => {
+                document.getElementById(`tab-${t}`).classList.toggle('active', tab === t);
+            });
             renderDashboard();
         }
 
@@ -390,122 +434,196 @@
             renderDashboard();
         }
 
+        function openDetailsModal(index) {
+            const anime = fullWatchlist[index];
+            if (!anime) return;
+
+            const score = ratings[anime.title] || 0;
+            let starsHTML = `<div class="star-rating flex items-center gap-1 text-lg">`;
+            for (let i = 1; i <= 10; i++) {
+                starsHTML += `<span onclick="setRating('${anime.title.replace(/'/g, "\\'")}', ${i})" class="${i <= score ? 'text-yellow-400' : 'text-gray-600'}">★</span>`;
+            }
+            starsHTML += `<span class="text-xs text-gray-400 ml-2">(${score}/10)</span></div>`;
+
+            let genresHTML = '';
+            if (anime.genres && anime.genres.length > 0) {
+                genresHTML = `<div class="flex flex-wrap gap-1.5 mt-2 font-medium">` +
+                    anime.genres.map(g => `<span class="px-2 py-0.5 rounded-md bg-white/10 border border-white/10 text-[10px] text-gray-300">${g}</span>`).join('') +
+                    `</div>`;
+            }
+
+            let seasonsHTML = '';
+            if (anime.seasons && anime.seasons.length > 0) {
+                seasonsHTML = `<div class="space-y-2 mt-2 max-h-36 overflow-y-auto pr-1">`;
+                anime.seasons.forEach(s => {
+                    seasonsHTML += `
+                        <div class="flex items-center justify-between text-xs p-2 rounded-xl border border-white/10 bg-white/5 font-medium">
+                            <span>${s.name}</span>
+                            <span>${s.watched} / ${s.total} gesehen</span>
+                        </div>`;
+                });
+                seasonsHTML += `</div>`;
+            }
+
+            document.getElementById('modal-content').innerHTML = `
+                <div class="flex items-start gap-4">
+                    ${anime.cover ? `<img src="${anime.cover}" class="w-24 h-36 object-cover rounded-2xl shadow-lg flex-shrink-0">` : ''}
+                    <div class="flex-grow">
+                        <h3 class="text-xl font-bold text-white">${anime.title}</h3>
+                        <p class="text-xs text-blue-400 font-semibold mt-1">${anime.progressText || ''}</p>
+                        ${genresHTML}
+                        <div class="mt-3">
+                            <label class="text-[10px] uppercase font-bold text-gray-400 block mb-1">Deine Bewertung:</label>
+                            ${starsHTML}
+                        </div>
+                    </div>
+                </div>
+
+                <div class="border-t border-white/10 pt-3 mt-3">
+                    <label class="text-xs font-semibold text-gray-400 block mb-1">AniWorld Link:</label>
+                    <div class="flex gap-2">
+                        <input type="text" id="edit-anime-link" value="${anime.link || ''}" class="apple-input w-full p-2 text-xs rounded-xl text-white outline-none">
+                        <button onclick="saveAnimeLink(${index})" class="apple-button text-xs font-semibold px-3 py-2 rounded-xl text-white">Speichern</button>
+                    </div>
+                </div>
+
+                ${seasonsHTML ? `<div class="border-t border-white/10 pt-3 mt-3"><h4 class="text-xs font-semibold text-gray-300">Staffeln</h4>${seasonsHTML}</div>` : ''}
+
+                <div class="pt-4 flex items-center justify-between gap-2 border-t border-white/10 mt-4">
+                    <button onclick="deleteAnimeFromList(${index})" class="bg-red-500/20 border border-red-500/30 text-red-300 text-xs font-semibold px-3 py-2 rounded-xl">Löschen</button>
+                    <button onclick="refreshSingleAnime(${index})" id="btn-refresh-single" class="bg-white/10 text-xs font-semibold px-3 py-2 rounded-xl text-white">Fortschritt aktualisieren</button>
+                </div>
+            `;
+            document.getElementById('details-modal').classList.remove('hidden');
+        }
+
+        function saveAnimeLink(index) {
+            fullWatchlist[index].link = document.getElementById('edit-anime-link').value.trim();
+            localStorage.setItem('ani_cached_watchlist', JSON.stringify(fullWatchlist));
+            renderDashboard();
+            alert('URL gespeichert!');
+        }
+
+        function deleteAnimeFromList(index) {
+            if (confirm(`"${fullWatchlist[index].title}" löschen?`)) {
+                fullWatchlist.splice(index, 1);
+                localStorage.setItem('ani_cached_watchlist', JSON.stringify(fullWatchlist));
+                closeDetailsModal();
+                populateGenres();
+                renderDashboard();
+            }
+        }
+
+        async function refreshSingleAnime(index) {
+            const anime = fullWatchlist[index];
+            const email = localStorage.getItem('ani_email');
+            const password = localStorage.getItem('ani_pass');
+
+            if (!email || !password) return alert('Anmeldedaten fehlen.');
+            if (!anime.link) return alert('Für diesen Anime ist keine URL gespeichert! Bitte trage zuerst einen Link ein.');
+
+            const btn = document.getElementById('btn-refresh-single');
+            if (btn) {
+                btn.disabled = true;
+                btn.innerText = 'Lade Fortschritt...';
+            }
+
+            try {
+                // Sendet gezielt den einzelnen Link + Login-Daten ans Backend
+                const res = await fetch('/api/fetch-single-anime', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email, password, url: anime.link })
+                });
+
+                const data = await res.json();
+                if (data.error) {
+                    alert('Fehler: ' + data.error);
+                } else if (data.anime) {
+                    // Einzelne Daten aktualisieren
+                    fullWatchlist[index].progressText = data.anime.progressText || fullWatchlist[index].progressText;
+                    if (data.anime.seasons) fullWatchlist[index].seasons = data.anime.seasons;
+
+                    localStorage.setItem('ani_cached_watchlist', JSON.stringify(fullWatchlist));
+                    openDetailsModal(index);
+                    renderDashboard();
+                    alert('Fortschritt erfolgreich über den gespeicherten Link aktualisiert!');
+                }
+            } catch (err) {
+                alert('Fehler beim Abrufen des Einzel-Links.');
+            } finally {
+                if (btn) {
+                    btn.disabled = false;
+                    btn.innerText = 'Fortschritt aktualisieren';
+                }
+            }
+        }
+
+        function closeDetailsModal() {
+            document.getElementById('details-modal').classList.add('hidden');
+        }
+
         function renderDashboard() {
             const results = document.getElementById('watchlist-results');
             results.innerHTML = '';
 
-            // Zähler berechnen
             const moviesCount = fullWatchlist.filter(a => a.isMovie).length;
-            const seriesCount = fullWatchlist.length - moviesCount;
-
             document.getElementById('count-all').innerText = fullWatchlist.length;
-            document.getElementById('count-series').innerText = seriesCount;
+            document.getElementById('count-series').innerText = fullWatchlist.length - moviesCount;
             document.getElementById('count-movies').innerText = moviesCount;
             document.getElementById('count-favs').innerText = favorites.length;
 
             let filtered = fullWatchlist.filter(anime => {
-                // Tab-Filter
-                let matchesTab = true;
-                if (currentTab === 'series') matchesTab = !anime.isMovie;
-                if (currentTab === 'movies') matchesTab = anime.isMovie;
-                if (currentTab === 'favorites') matchesTab = favorites.includes(anime.title);
-
-                // Suchfeld-Filter
-                let matchesSearch = true;
-                if (searchQuery) {
-                    matchesSearch = anime.title.toLowerCase().includes(searchQuery);
-                }
-
-                // Genre-Filter (inkl. Custom Genres)
-                let matchesGenre = true;
+                if (currentTab === 'series' && anime.isMovie) return false;
+                if (currentTab === 'movies' && !anime.isMovie) return false;
+                if (currentTab === 'favorites' && !favorites.includes(anime.title)) return false;
+                if (searchQuery && !anime.title.toLowerCase().includes(searchQuery)) return false;
                 if (currentGenre !== 'all') {
                     if (currentGenre.startsWith('custom:')) {
-                        const tagName = currentGenre.replace('custom:', '');
-                        matchesGenre = customGenres[tagName] && customGenres[tagName].includes(anime.title);
-                    } else {
-                        matchesGenre = anime.genres && anime.genres.includes(currentGenre);
+                        const tag = currentGenre.replace('custom:', '');
+                        if (!customGenres[tag] || !customGenres[tag].includes(anime.title)) return false;
+                    } else if (!anime.genres || !anime.genres.includes(currentGenre)) {
+                        return false;
                     }
                 }
-
-                return matchesTab && matchesSearch && matchesGenre;
+                return true;
             });
 
             if (filtered.length === 0) {
-                results.innerHTML = `<div class="col-span-full text-center py-12 text-gray-500 text-sm">Keine Animes für diese Such-/Filterkombination gefunden.</div>`;
+                results.innerHTML = `<div class="col-span-full text-center py-12 text-gray-500 text-sm">Keine Einträge gefunden.</div>`;
                 return;
             }
 
             filtered.forEach(anime => {
+                const idx = fullWatchlist.indexOf(anime);
                 const isFav = favorites.includes(anime.title);
+                const score = ratings[anime.title] || 0;
                 const card = document.createElement('div');
-                card.className = 'apple-depth-card p-5 rounded-3xl flex gap-5 items-start transition-all relative group';
+                card.className = 'apple-depth-card p-5 rounded-3xl flex gap-5 items-start relative';
 
-                let seasonsHTML = '';
-                if (anime.seasons && anime.seasons.length > 0) {
-                    seasonsHTML = `<div class="mt-3 pt-3 border-t border-white/10 flex flex-wrap gap-1.5">`;
-                    anime.seasons.forEach(s => {
-                        let badgeStyle = 'bg-gray-800/80 text-gray-400 border-gray-700/50';
-                        let icon = '○';
-
-                        if (s.status === 'completed') {
-                            badgeStyle = 'bg-emerald-500/20 text-emerald-300 border-emerald-500/30 shadow-sm shadow-emerald-950';
-                            icon = '✓';
-                        } else if (s.status === 'in_progress') {
-                            badgeStyle = 'bg-amber-500/20 text-amber-300 border-amber-500/30 shadow-sm shadow-amber-950';
-                            icon = '◐';
-                        }
-
-                        seasonsHTML += `
-                            <span class="text-[11px] px-2.5 py-1 rounded-lg border font-medium flex items-center gap-1 ${badgeStyle}">
-                                <span>${icon}</span> ${s.name} (${s.watched}/${s.total})
-                            </span>
-                        `;
-                    });
-                    seasonsHTML += `</div>`;
+                let genreBadges = '';
+                if (anime.genres && anime.genres.length > 0) {
+                    genreBadges = `<div class="flex flex-wrap gap-1 mt-1.5">` +
+                        anime.genres.slice(0, 3).map(g => `<span class="px-2 py-0.5 rounded-md bg-white/10 border border-white/10 text-[10px] text-gray-300 font-medium">${g}</span>`).join('') +
+                        `</div>`;
                 }
 
-                // Generiere Custom Badges für diesen Anime
-                let animeCustomBadges = '';
-                Object.keys(customGenres).forEach(tag => {
-                    if (customGenres[tag].includes(anime.title)) {
-                        animeCustomBadges += `<span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-2 py-0.5 rounded-md font-medium">🏷️ ${tag}</span> `;
-                    }
-                });
-
-                // Standard Genre Badges
-                let genreBadges = anime.genres ? anime.genres.map(g => {
-                    if (g.toLowerCase() === 'ger' || g.toLowerCase() === 'german') {
-                        return `<span class="text-[10px] bg-blue-500/20 text-blue-300 border border-blue-500/40 px-2 py-0.5 rounded-md font-semibold">🇩🇪 Ger</span>`;
-                    }
-                    return `<span class="text-[10px] bg-white/5 border border-white/10 px-2 py-0.5 rounded-md text-gray-400">${g}</span>`;
-                }).join(' ') : '';
-
                 card.innerHTML = `
-                    <button onclick="toggleFav('${anime.title.replace(/'/g, "\\'")}')" class="absolute top-4 right-4 star-icon text-xl cursor-pointer focus:outline-none" title="Favorit umschalten">
-                        <span class="${isFav ? 'text-yellow-400' : 'text-gray-600 hover:text-gray-400'}">${isFav ? '★' : '☆'}</span>
+                    <button onclick="toggleFav('${anime.title.replace(/'/g, "\\'")}')" class="absolute top-4 right-4 text-xl cursor-pointer">
+                        <span class="${isFav ? 'text-yellow-400' : 'text-gray-600'}">${isFav ? '★' : '☆'}</span>
                     </button>
 
-                    ${anime.cover ? `<img src="${anime.cover}" class="w-20 h-28 object-cover rounded-2xl shadow-2xl flex-shrink-0">` : ''}
+                    ${anime.cover ? `<img src="${anime.cover}" class="w-20 h-28 object-cover rounded-2xl flex-shrink-0 shadow-lg">` : '<div class="w-20 h-28 bg-white/5 border border-white/10 rounded-2xl flex items-center justify-center text-xs text-gray-500">Kein Bild</div>'}
                     
                     <div class="flex-grow min-w-0 pr-6">
-                        <div class="flex items-center gap-2">
-                            <h3 class="font-semibold text-base leading-snug truncate text-white">${anime.title}</h3>
-                            ${anime.isMovie ? '<span class="text-[10px] bg-purple-500/20 text-purple-300 border border-purple-500/30 px-1.5 py-0.5 rounded">Film</span>' : ''}
-                        </div>
-                        <p class="text-xs text-blue-400 font-medium mt-0.5">${anime.progressText}</p>
+                        <h3 class="font-semibold text-base truncate text-white">${anime.title}</h3>
+                        <p class="text-xs text-blue-400 font-medium mt-0.5">${anime.progressText || ''}</p>
+                        ${genreBadges}
+                        ${score ? `<div class="text-xs text-yellow-400 font-semibold mt-1">★ ${score}/10</div>` : ''}
                         
-                        <div class="flex flex-wrap gap-1 mt-2">
-                            ${animeCustomBadges}
-                            ${genreBadges}
-                        </div>
-
-                        ${seasonsHTML}
-
-                        <div class="mt-3">
-                            <a href="${anime.link}" target="_blank" class="inline-flex items-center text-xs font-semibold text-[#0A84FF] hover:text-[#409CFF] transition">
-                                Auf AniWorld öffnen 
-                                <svg class="w-3 h-3 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path></svg>
-                            </a>
+                        <div class="mt-4 flex items-center gap-3">
+                            <button onclick="openDetailsModal(${idx})" class="text-xs font-semibold px-3 py-1.5 rounded-lg bg-white/10 text-gray-200">Optionen & Details</button>
+                            ${anime.link ? `<a href="${anime.link}" target="_blank" class="text-xs font-semibold text-[#0A84FF]">Öffnen</a>` : ''}
                         </div>
                     </div>
                 `;
@@ -513,57 +631,295 @@
             });
         }
 
-        /* --- CUSTOM GENRE MODAL LOGIK --- */
-        function openSettings() {
-            const select = document.getElementById('custom-anime-select');
-            select.innerHTML = '';
-
-            fullWatchlist.forEach(anime => {
-                select.innerHTML += `<option value="${anime.title}">${anime.title}</option>`;
-            });
-
-            renderCustomTagsList();
+        // --- EINSTELLUNGEN & TOOLS ---
+        function openSettingsModal() {
             document.getElementById('settings-modal').classList.remove('hidden');
         }
 
-        function closeSettings() {
+        function closeSettingsModal() {
             document.getElementById('settings-modal').classList.add('hidden');
+        }
+
+        async function fetchCoverFromMAL(title) {
+            try {
+                const res = await fetch(`https://api.jikan.moe/v4/anime?q=${encodeURIComponent(title)}&limit=1`);
+                const data = await res.json();
+                if (data.data && data.data.length > 0) {
+                    return data.data[0].images.jpg.image_url;
+                }
+            } catch (e) {
+                console.error('Cover-Fetch Fehler für', title, e);
+            }
+            return null;
+        }
+
+        async function fetchAllMissingCovers() {
+            const status = document.getElementById('cover-fetch-status');
+            const btn = document.getElementById('btn-fetch-covers');
+            const missing = fullWatchlist.filter(a => !a.cover);
+
+            if (missing.length === 0) {
+                alert('Alle Animes besitzen bereits ein Cover-Bild!');
+                return;
+            }
+
+            btn.disabled = true;
+            status.classList.remove('hidden');
+
+            for (let i = 0; i < missing.length; i++) {
+                const anime = missing[i];
+                status.innerText = `Lade Cover (${i + 1}/${missing.length}): ${anime.title}`;
+                const cover = await fetchCoverFromMAL(anime.title);
+                if (cover) {
+                    anime.cover = cover;
+                }
+                await new Promise(r => setTimeout(r, 400));
+            }
+
+            localStorage.setItem('ani_cached_watchlist', JSON.stringify(fullWatchlist));
+            status.innerText = 'Cover-Suche abgeschlossen!';
+            renderDashboard();
+
+            setTimeout(() => {
+                status.classList.add('hidden');
+                btn.disabled = false;
+            }, 2000);
+        }
+
+        // --- DUPLIKATE PROMPTER SYSTEM ---
+        function startDuplicateCheck() {
+            duplicatePairs = [];
+            currentDuplicateIndex = 0;
+
+            for (let i = 0; i < fullWatchlist.length; i++) {
+                for (let j = i + 1; j < fullWatchlist.length; j++) {
+                    const a = fullWatchlist[i];
+                    const b = fullWatchlist[j];
+
+                    const cleanA = cleanAnimeTitle(a.title);
+                    const cleanB = cleanAnimeTitle(b.title);
+
+                    if (cleanA.length > 3 && cleanB.length > 3 && (cleanA.includes(cleanB) || cleanB.includes(cleanA))) {
+                        duplicatePairs.push({ indexA: i, indexB: j, animeA: a, animeB: b });
+                    }
+                }
+            }
+
+            if (duplicatePairs.length === 0) {
+                alert('Keine möglichen Duplikate gefunden.');
+                return;
+            }
+
+            closeSettingsModal();
+            showNextDuplicatePair();
+            document.getElementById('duplicates-modal').classList.remove('hidden');
+        }
+
+        function cleanAnimeTitle(str) {
+            return str.toLowerCase().replace(/[^a-z0-9]/g, '');
+        }
+
+        function showNextDuplicatePair() {
+            const container = document.getElementById('duplicate-candidate-container');
+            if (currentDuplicateIndex >= duplicatePairs.length) {
+                container.innerHTML = `<div class="text-center text-emerald-400 font-semibold py-6 text-sm">Prüfung abgeschlossen! Keine weiteren Duplikate mehr.</div>`;
+                setTimeout(closeDuplicatesModal, 1500);
+                return;
+            }
+
+            const pair = duplicatePairs[currentDuplicateIndex];
+            container.innerHTML = `
+                <p class="text-xs text-gray-400">Prüfung (${currentDuplicateIndex + 1}/${duplicatePairs.length}): Sind diese beiden Animes identisch?</p>
+                <div class="grid grid-cols-2 gap-4 my-2">
+                    <div class="p-3 bg-white/5 border border-white/10 rounded-2xl text-center">
+                        <span class="text-xs font-bold text-gray-400 block mb-1">Eintrag 1</span>
+                        <h4 class="font-bold text-white text-sm">${pair.animeA.title}</h4>
+                        <p class="text-[11px] text-blue-400 mt-1">${pair.animeA.progressText || ''}</p>
+                    </div>
+                    <div class="p-3 bg-white/5 border border-white/10 rounded-2xl text-center">
+                        <span class="text-xs font-bold text-gray-400 block mb-1">Eintrag 2</span>
+                        <h4 class="font-bold text-white text-sm">${pair.animeB.title}</h4>
+                        <p class="text-[11px] text-blue-400 mt-1">${pair.animeB.progressText || ''}</p>
+                    </div>
+                </div>
+
+                <div class="flex flex-col gap-2 pt-2">
+                    <button onclick="mergeDuplicatePair(true)" class="apple-button font-semibold py-2.5 rounded-xl text-xs text-white">
+                        Ja, zusammenführen (Eintrag 2 löschen & Daten behalten)
+                    </button>
+                    <button onclick="mergeDuplicatePair(false)" class="bg-white/10 hover:bg-white/20 font-semibold py-2.5 rounded-xl text-xs text-gray-300 transition">
+                        Nein, das sind zwei verschiedene Animes
+                    </button>
+                </div>
+            `;
+        }
+
+        function mergeDuplicatePair(shouldMerge) {
+            if (shouldMerge) {
+                const pair = duplicatePairs[currentDuplicateIndex];
+                if (!pair.animeA.cover && pair.animeB.cover) pair.animeA.cover = pair.animeB.cover;
+                if (!pair.animeA.link && pair.animeB.link) pair.animeA.link = pair.animeB.link;
+
+                // Eintrag 2 entfernen
+                fullWatchlist = fullWatchlist.filter((_, idx) => idx !== pair.indexB);
+                localStorage.setItem('ani_cached_watchlist', JSON.stringify(fullWatchlist));
+                renderDashboard();
+            }
+
+            currentDuplicateIndex++;
+            showNextDuplicatePair();
+        }
+
+        function closeDuplicatesModal() {
+            document.getElementById('duplicates-modal').classList.add('hidden');
+        }
+
+        function exportBackup() {
+            const data = { watchlist: fullWatchlist, favorites, ratings, customGenres };
+            const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `aniworld_watchlist_backup_${new Date().toISOString().slice(0, 10)}.json`;
+            a.click();
+        }
+
+        function importJSON(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                try {
+                    const imported = JSON.parse(event.target.result);
+                    if (imported.watchlist) fullWatchlist = imported.watchlist;
+                    if (imported.favorites) favorites = imported.favorites;
+                    if (imported.ratings) ratings = imported.ratings;
+                    if (imported.customGenres) customGenres = imported.customGenres;
+
+                    localStorage.setItem('ani_cached_watchlist', JSON.stringify(fullWatchlist));
+                    localStorage.setItem('ani_favs', JSON.stringify(favorites));
+                    localStorage.setItem('ani_ratings', JSON.stringify(ratings));
+                    localStorage.setItem('ani_custom_genres', JSON.stringify(customGenres));
+
+                    populateGenres();
+                    renderDashboard();
+                    closeSettingsModal();
+                    alert('Backup erfolgreich geladen!');
+                } catch (err) {
+                    alert('Ungültige JSON-Datei.');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        async function importExcel(e) {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            const status = document.getElementById('excel-status');
+            status.classList.remove('hidden');
+            status.innerText = 'Lese Datei...';
+
+            const reader = new FileReader();
+            reader.onload = async (event) => {
+                const data = new Uint8Array(event.target.result);
+                const workbook = XLSX.read(data, { type: 'array' });
+                const firstSheet = workbook.Sheets[workbook.SheetNames[0]];
+                const rows = XLSX.utils.sheet_to_json(firstSheet);
+
+                status.innerText = `Importiere ${rows.length} Anime... Lade Cover art...`;
+
+                for (let i = 0; i < rows.length; i++) {
+                    const row = rows[i];
+                    const title = row.Titel || row.Title || row.Name || row.Anime || Object.values(row)[0];
+                    if (!title) continue;
+
+                    let existing = fullWatchlist.find(a => a.title.toLowerCase() === String(title).toLowerCase());
+                    let cover = row.Cover || row.Image || null;
+
+                    if (!cover && (!existing || !existing.cover)) {
+                        status.innerText = `Lade Cover (${i + 1}/${rows.length}): ${title}`;
+                        cover = await fetchCoverFromMAL(title);
+                        await new Promise(r => setTimeout(r, 400));
+                    }
+
+                    const ratingVal = row.Bewertung || row.Score || row.Rating;
+                    if (ratingVal && !isNaN(ratingVal)) {
+                        ratings[title] = Math.min(10, Math.max(1, parseInt(ratingVal)));
+                    }
+
+                    // Aus Excel eingelesenes Genre
+                    let rawGenre = row.Genre || row.Genres || row.Tag || row.Tags || null;
+                    let parsedGenres = [];
+                    if (rawGenre) {
+                        parsedGenres = String(rawGenre).split(',').map(g => g.trim());
+                    }
+
+                    if (!existing) {
+                        fullWatchlist.push({
+                            title: String(title),
+                            progressText: row.Status || row.Fortschritt || 'Importiert aus Excel',
+                            cover: cover || null,
+                            link: row.Link || row.URL || '',
+                            isMovie: row.IsMovie || false,
+                            genres: parsedGenres
+                        });
+                    } else {
+                        if (cover && !existing.cover) existing.cover = cover;
+                        if (parsedGenres.length > 0 && (!existing.genres || existing.genres.length === 0)) {
+                            existing.genres = parsedGenres;
+                        }
+                    }
+                }
+
+                localStorage.setItem('ani_cached_watchlist', JSON.stringify(fullWatchlist));
+                localStorage.setItem('ani_ratings', JSON.stringify(ratings));
+
+                status.innerText = 'Import erfolgreich abgeschlossen!';
+                populateGenres();
+                renderDashboard();
+                setTimeout(() => {
+                    status.classList.add('hidden');
+                    closeSettingsModal();
+                }, 1500);
+            };
+            reader.readAsArrayBuffer(file);
+        }
+
+        // --- CUSTOM GENRES ---
+        function openCustomGenresModal() {
+            const select = document.getElementById('custom-anime-select');
+            select.innerHTML = '';
+            fullWatchlist.forEach(a => select.innerHTML += `<option value="${a.title}">${a.title}</option>`);
+            renderCustomTagsList();
+            document.getElementById('custom-genres-modal').classList.remove('hidden');
+        }
+
+        function closeCustomGenresModal() {
+            document.getElementById('custom-genres-modal').classList.add('hidden');
         }
 
         function addCustomGenre() {
             const tagInput = document.getElementById('new-custom-genre');
             const animeSelect = document.getElementById('custom-anime-select');
+            const tag = tagInput.value.trim();
+            const title = animeSelect.value;
+            if (!tag) return;
 
-            const tagName = tagInput.value.trim();
-            const animeTitle = animeSelect.value;
-
-            if (!tagName) {
-                alert('Bitte gib einen Tag-Namen ein.');
-                return;
-            }
-
-            if (!customGenres[tagName]) {
-                customGenres[tagName] = [];
-            }
-
-            if (!customGenres[tagName].includes(animeTitle)) {
-                customGenres[tagName].push(animeTitle);
-            }
+            if (!customGenres[tag]) customGenres[tag] = [];
+            if (!customGenres[tag].includes(title)) customGenres[tag].push(title);
 
             localStorage.setItem('ani_custom_genres', JSON.stringify(customGenres));
             tagInput.value = '';
-
             renderCustomTagsList();
             populateGenres();
             renderDashboard();
         }
 
-        function removeCustomTag(tagName, animeTitle) {
-            if (customGenres[tagName]) {
-                customGenres[tagName] = customGenres[tagName].filter(t => t !== animeTitle);
-                if (customGenres[tagName].length === 0) {
-                    delete customGenres[tagName];
-                }
+        function removeCustomTag(tag, title) {
+            if (customGenres[tag]) {
+                customGenres[tag] = customGenres[tag].filter(t => t !== title);
+                if (customGenres[tag].length === 0) delete customGenres[tag];
             }
             localStorage.setItem('ani_custom_genres', JSON.stringify(customGenres));
             renderCustomTagsList();
@@ -574,23 +930,13 @@
         function renderCustomTagsList() {
             const container = document.getElementById('custom-tags-list');
             container.innerHTML = '';
-
-            const keys = Object.keys(customGenres);
-            if (keys.length === 0) {
-                container.innerHTML = `<span class="text-xs text-gray-500">Noch keine Custom-Tags vorhanden.</span>`;
-                return;
-            }
-
-            keys.forEach(tag => {
-                customGenres[tag].forEach(animeTitle => {
+            Object.keys(customGenres).forEach(tag => {
+                customGenres[tag].forEach(title => {
                     container.innerHTML += `
                         <div class="flex items-center justify-between text-xs bg-white/5 border border-white/10 p-2 rounded-xl">
-                            <div>
-                                <span class="font-semibold text-purple-300">🏷️ ${tag}</span>: <span class="text-gray-300">${animeTitle}</span>
-                            </div>
-                            <button onclick="removeCustomTag('${tag}', '${animeTitle.replace(/'/g, "\\'")}')" class="text-red-400 hover:text-red-300 ml-2">Löschen</button>
-                        </div>
-                    `;
+                            <span><b>🏷️ ${tag}</b>: ${title}</span>
+                            <button onclick="removeCustomTag('${tag}', '${title.replace(/'/g, "\\'")}')" class="text-red-400">Löschen</button>
+                        </div>`;
                 });
             });
         }
